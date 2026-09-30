@@ -6,3 +6,5 @@ imbalanced-learn
 joblib
 seaborn 
 matplotlib
+shap
+ipykernel

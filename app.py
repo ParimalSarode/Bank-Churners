@@ -68,7 +68,6 @@ if submitted:
         "Avg_Utilization_Ratio": utilization
     }])
 
-    # Use the fitted class labels rather than assuming churn is encoded as 1.
     class_labels = list(model.classes_)
     churn_index = class_labels.index(CHURN_LABEL)
     churn_proba = model.predict_proba(input_data)[0, churn_index]
