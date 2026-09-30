@@ -3,30 +3,26 @@
 import streamlit as st
 import pandas as pd
 import joblib
-from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score, confusion_matrix
+from pathlib import Path
 
-# ----------------------------
-# Load trained model pipeline
-# ----------------------------
+MODEL_PATH = Path(__file__).with_name("randomforest_churn_model.pkl")
+CHURN_LABEL = "Attrited Customer"
+
+
 @st.cache_resource
 def load_model():
-    return joblib.load("randomforest_churn_model.pkl")  # save your best pipeline as .pkl
+    return joblib.load(MODEL_PATH)
 
 model = load_model()
 
-# ----------------------------
-# App Layout
-# ----------------------------
+
 st.title("💳 Customer Churn Prediction")
 st.write("Predict whether a customer is likely to churn based on their profile & activity.")
 
-# ----------------------------
-# User Input Form
-# ----------------------------
+
 with st.form("input_form"):
     st.subheader("Enter Customer Details")
 
-    # Example fields (adjust to match your dataset features)
     gender = st.selectbox("Gender", ["M", "F"])
     education = st.selectbox("Education Level", [
         "Uneducated", "High School", "College", "Graduate", "Post-Graduate", "Doctorate", "Unknown"
@@ -51,11 +47,8 @@ with st.form("input_form"):
 
     submitted = st.form_submit_button("Predict Churn")
 
-# ----------------------------
-# Prediction
-# ----------------------------
+
 if submitted:
-    # Build dataframe from inputs
     input_data = pd.DataFrame([{
         "Gender": gender,
         "Education_Level": education,
@@ -75,31 +68,18 @@ if submitted:
         "Avg_Utilization_Ratio": utilization
     }])
 
-    # Predict
-    churn_proba = model.predict_proba(input_data)[:, 1][0]
+    # Use the fitted class labels rather than assuming churn is encoded as 1.
+    class_labels = list(model.classes_)
+    churn_index = class_labels.index(CHURN_LABEL)
+    churn_proba = model.predict_proba(input_data)[0, churn_index]
     churn_class = model.predict(input_data)[0]
+    is_churn = churn_class == CHURN_LABEL
 
     st.subheader("📊 Prediction Result")
     st.write(f"**Churn Probability:** {churn_proba:.2%}")
-    st.write(f"**Predicted Class:** {'Churn' if churn_class == 1 else 'Not Churn'}")
+    st.write(f"**Predicted Class:** {'Churn' if is_churn else 'Not Churn'}")
 
-    if churn_class == 1:
+    if is_churn:
         st.error("⚠️ This customer is at **HIGH risk of churn**.")
     else:
         st.success("✅ This customer is **not likely to churn**.")
-
-# ----------------------------
-# Metrics Section (Optional)
-# ----------------------------
-# st.markdown("---")
-# st.subheader("📈 Model Performance (Test Data)")
-
-# If you have test data & true labels stored, you can show metrics
-# Example (replace with actual test dataset you saved)
-# y_test = ...
-# y_pred = model.predict(X_test)
-# y_pred_proba = model.predict_proba(X_test)[:,1]
-# st.write("ROC-AUC:", roc_auc_score(y_test, y_pred_proba))
-# st.write("Precision:", precision_score(y_test, y_pred))
-# st.write("Recall:", recall_score(y_test, y_pred))
-# st.write("F1:", f1_score(y_test, y_pred))
